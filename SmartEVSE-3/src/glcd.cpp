@@ -463,7 +463,13 @@ void GLCD(void) {
     if (ErrorFlags) {                                                           // We switch backlight on, as we exit after displaying the error
         BacklightTimer = BACKLIGHT;                                             // Backlight timer is set to 60 seconds
 
-        if (ErrorFlags & CT_NOCOMM) {                                           // No serial communication for 10 seconds
+        if (ErrorFlags & POWER_FAIL) {                                           // No serial communication for 10 seconds
+            GLCD_print_buf2(0, (const char *) "POWER");
+            GLCD_print_buf2(2, (const char *) "FAILED");
+            GLCD_print_buf2(4, (const char *) "SOCKET");
+            GLCD_print_buf2(6, (const char *) "RELEASE");
+            return;
+        } else if (ErrorFlags & CT_NOCOMM) {                                    // No serial communication for 10 seconds
             GLCD_print_buf2(0, (const char *) "ERROR NO");
             GLCD_print_buf2(2, (const char *) "SERIAL COM");
             GLCD_print_buf2(4, (const char *) "CHECK");
@@ -861,13 +867,33 @@ void GLCDMenu(uint8_t Buttons) {
 
 
 void GLCD_init(void) {
+    _RSTB_0;                                                                    // Reset GLCD module
+    delay(200);                                                                 // transients on the line could have garbled the LCD, wait 200ms then re-init.
+    _RSTB_1;                                                                    // Reset line high
     delay(200);                                                                 // transients on the line could have garbled the LCD, wait 200ms then re-init.
     _A0_0;                                                                      // A0=0
+    st7565_command(0xE2);
+    delay(60);                                                                 // transients on the line could have garbled the LCD, wait 200ms then re-init.
     _RSTB_0;                                                                    // Reset GLCD module
-    delayMicroseconds(4);
+    delay(60);                                                                 // transients on the line could have garbled the LCD, wait 200ms then re-init.
     _RSTB_1;                                                                    // Reset line high
-    delayMicroseconds(4);
+    delay(280);                                                                 // transients on the line could have garbled the LCD, wait 200ms then re-init.
+
+    st7565_command(0xA0);
+    st7565_command(0xC8);
     
+    st7565_command(0xA2);
+    st7565_command(0x2F);
+
+    st7565_command(0x26);
+    
+    st7565_command(0x81);
+
+    st7565_command(0x15);
+    st7565_command(0x40);
+
+//    delayMicroseconds(4);
+/*    
     st7565_command(0xA2);                                                       // (11) set bias at duty cycle 1.65 (0xA2=1.9 0xA3=1.6)
     st7565_command(0xA0);                                                       // (8) SEG direction (0xA0 or 0xA1)
     st7565_command(0xC8);                                                       // (15) comm direction normal =0xC0 comm reverse= 0xC8
@@ -884,7 +910,7 @@ void GLCD_init(void) {
     st7565_command(0xA4);                                                       // (10) ALL pixel on (A4=normal, A5=all ON)
 
     st7565_command(0x28 | 0x07);                                                // (16) ALL Power Control ON
-
+*/
     glcd_clear();                                                               // clear internal GLCD buffer
     goto_row(0x00);                                                             // (3) Set page address
     goto_col(0x00);                                                             // (4) Set column addr LSB

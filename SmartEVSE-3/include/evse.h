@@ -36,13 +36,18 @@
 #define VERSION "3.0.1"         	                                            // SmartEVSE software version
 #define TRANSFORMER_COMP 100   
 
+#define SWAP_SSR1_TO_PDDET
 
 // Pin definitions left side ESP32
 #define PIN_TEMP 36
 #define PIN_CP_IN 39
 #define PIN_PP_IN 34
 #define PIN_LOCK_IN 35
+#ifdef SWAP_SSR1_TO_PDDET
+#define PIN_POWDET 32
+#else
 #define PIN_SSR 32
+#endif
 #define PIN_LCD_SDO_B3 33                                                       // = SPI_MOSI
 #define PIN_LCD_A0_B2 25
 #define PIN_LCD_CLK 26                                                          // = SPI_SCK
@@ -162,6 +167,7 @@
 #define CT_NOCOMM 2
 #define TEMP_HIGH 4
 #define UNUSED 8                                                                // Unused
+#define POWER_FAIL 8                                                                // Unused
 #define RCM_TRIPPED 16                                                          // RCM tripped. >6mA DC residual current detected.
 #define NO_SUN 32
 #define Test_IO 64

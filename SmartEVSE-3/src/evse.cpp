@@ -266,6 +266,28 @@ uint16_t IRAM_ATTR local_adc1_read(int channel) {
 
 
 
+// Power fail detector pin goes low ISR
+//
+//
+#ifdef SWAP_SSR1_TO_PDDET
+void IRAM_ATTR onPowerFail (){
+//        if (digitalRead(PIN_RCM_FAULT) == HIGH) {                           
+            if (State) setState(STATE_B1);
+            ErrorFlags |= POWER_FAIL;
+            LCDTimer = 0;                                                   // display the correct error message on the LCD
+//        }
+
+
+
+    //ACTUATOR_UNLOCK;
+//    LockCable = 0;
+//    UnlockCable = 1;
+    //while (1) {
+    //    ;;
+    //}
+}
+#endif
+
 // CP pin low to high transition ISR
 //
 //
@@ -555,7 +577,9 @@ void setState(uint8_t NewState) {
             if (!ChargeDelay) ChargeDelay = 3;                                  // When entering State B1, wait at least 3 seconds before switching to another state.
             // fall through
         case STATE_A:                                                           // State A1
+#ifndef SWAP_SSR1_TO_PDDET
             CONTACTOR1_OFF;  
+#endif
             CONTACTOR2_OFF;  
             ledcWrite(CP_CHANNEL, 1024);                                        // PWM off,  channel 0, duty cycle 100%
             timerAlarmWrite(timerA, PWM_100, true);                             // Alarm every 1ms, auto reload 
@@ -570,14 +594,18 @@ void setState(uint8_t NewState) {
             }
             break;
         case STATE_B:
+#ifndef SWAP_SSR1_TO_PDDET
             CONTACTOR1_OFF;
+#endif
             CONTACTOR2_OFF;
             timerAlarmWrite(timerA, PWM_95, false);                             // Enable Timer alarm, set to diode test (95%)
             SetCurrent(ChargeCurrent);                                          // Enable PWM
             break;      
         case STATE_C:                                                           // State C2
             ActivationMode = 255;                                               // Disable ActivationMode
+#ifndef SWAP_SSR1_TO_PDDET
             CONTACTOR1_ON;                                                      // Contactor1 ON
+#endif
             CONTACTOR2_ON;                                                      // Contactor2 ON
             LCDTimer = 0;
             break;
@@ -2885,10 +2913,13 @@ void SetupNetworkTask(void * parameter) {
 
 
 void setup() {
-
     pinMode(PIN_CP_OUT, OUTPUT);            // CP output
     pinMode(PIN_SW_IN, INPUT);              // SW Switch input
+#ifndef SWAP_SSR1_TO_PDDET
     pinMode(PIN_SSR, OUTPUT);               // SSR1 output
+#else
+    pinMode(PIN_POWDET, INPUT);               // Power down detect, ex SSR1 output
+#endif
     pinMode(PIN_SSR2, OUTPUT);              // SSR2 output
     pinMode(PIN_RCM_FAULT, INPUT_PULLUP);   
 
@@ -2915,7 +2946,7 @@ void setup() {
     digitalWrite(PIN_ACTA, LOW);
     digitalWrite(PIN_ACTB, LOW);        
     digitalWrite(PIN_CPOFF, LOW);           // CP signal ACTIVE
-    digitalWrite(PIN_SSR, LOW);             // SSR1 OFF
+//    digitalWrite(PIN_SSR, LOW);             // SSR1 OFF
     digitalWrite(PIN_SSR2, LOW);            // SSR2 OFF
     digitalWrite(PIN_LCD_LED, HIGH);        // LCD Backlight ON
 
@@ -2994,6 +3025,13 @@ void setup() {
     // the timer interrupt will be reset in the ISR.
     attachInterrupt(PIN_CP_OUT, onCPpulse, RISING);   
    
+
+    // Detect power fail, call int to unlock connector
+#ifdef SWAP_SSR1_TO_PDDET
+    attachInterrupt(PIN_POWDET, onPowerFail, FALLING);   
+#endif
+
+
     // Uart 1 is used for Modbus @ 9600 8N1
     Serial1.begin(MODBUS_BAUDRATE, SERIAL_8N1, PIN_RS485_RX, PIN_RS485_TX);
 
