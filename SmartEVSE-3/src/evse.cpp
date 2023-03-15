@@ -2931,8 +2931,8 @@ void setup() {
     // the ST7567's max SPI Clock frequency is 20Mhz at 3.3V/25C
     // We choose 10Mhz here, to reserve some room for error.
     // SPI mode is MODE3 (Idle = HIGH, clock in on rising edge)
-    SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
-    
+    //SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
 
     // The CP (control pilot) output is a fixed 1khz square-wave (+6..9v / -12v).
     // It's pulse width varies between 10% and 96% indicating 6A-80A charging current.
